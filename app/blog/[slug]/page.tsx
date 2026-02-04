@@ -94,12 +94,12 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
               <div className="space-y-6 text-body text-brand-white/80 leading-relaxed">
                 {(() => {
                   const lines = post.content.split('\n');
-                  const elements = [];
+                  const elements: (JSX.Element | string)[] = [];
                   let inCodeBlock = false;
-                  let codeContent = [];
+                  let codeContent: string[] = [];
                   let codeLanguage = '';
                   let inList = false;
-                  let listItems = [];
+                  let listItems: string[] = [];
 
                   const flushList = () => {
                     if (listItems.length > 0) {
