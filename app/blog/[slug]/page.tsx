@@ -11,8 +11,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = getBlogPostBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = getBlogPostBySlug(slug);
 
   if (!post) {
     return {
@@ -26,8 +27,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function BlogPost({ params }: { params: { slug: string } }) {
-  const post = getBlogPostBySlug(params.slug);
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();
@@ -87,60 +89,125 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
           </header>
 
           {/* Content */}
-          <div className="prose prose-lg prose-invert max-w-none">
+          <div className="prose prose-lg prose-invert max-w-none prose-pre:bg-brand-dark prose-pre:border prose-pre:border-white/10">
             <div className="bg-brand-purple/20 border border-white/10 rounded-lg p-8 md:p-12">
               <div className="space-y-6 text-body text-brand-white/80 leading-relaxed">
-                {post.content.split("\n\n").map((paragraph, index) => {
-                  // Handle headings
-                  if (paragraph.startsWith("## ")) {
-                    return (
-                      <h2
-                        key={index}
-                        className="text-h2 mt-12 mb-6 text-brand-white"
-                      >
-                        {paragraph.replace("## ", "")}
-                      </h2>
-                    );
-                  }
-                  if (paragraph.startsWith("### ")) {
-                    return (
-                      <h3
-                        key={index}
-                        className="text-2xl font-bold mt-8 mb-4 text-brand-white"
-                      >
-                        {paragraph.replace("### ", "")}
-                      </h3>
-                    );
+                {(() => {
+                  const lines = post.content.split('\n');
+                  const elements = [];
+                  let inCodeBlock = false;
+                  let codeContent = [];
+                  let codeLanguage = '';
+                  let inList = false;
+                  let listItems = [];
+
+                  const flushList = () => {
+                    if (listItems.length > 0) {
+                      elements.push(
+                        <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-2 ml-4 mb-6 text-brand-white/80">
+                          {listItems.map((item, i) => (
+                            <li key={i} dangerouslySetInnerHTML={{ __html: item }} />
+                          ))}
+                        </ul>
+                      );
+                      listItems = [];
+                      inList = false;
+                    }
+                  };
+
+                  const flushCode = () => {
+                    if (inCodeBlock) {
+                      elements.push(
+                        <pre key={`code-${elements.length}`} className="bg-brand-dark border border-white/20 rounded-lg p-4 mb-6 overflow-x-auto">
+                          <code className={`language-${codeLanguage} text-sm text-brand-orange`}>
+                            {codeContent.join('\n')}
+                          </code>
+                        </pre>
+                      );
+                      codeContent = [];
+                      codeLanguage = '';
+                      inCodeBlock = false;
+                    }
+                  };
+
+                  for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const trimmedLine = line.trim();
+
+                    // Handle code blocks
+                    if (trimmedLine.startsWith('```')) {
+                      flushList();
+                      if (!inCodeBlock) {
+                        // Start code block
+                        inCodeBlock = true;
+                        codeLanguage = trimmedLine.slice(3).trim() || 'text';
+                      } else {
+                        // End code block
+                        flushCode();
+                      }
+                      continue;
+                    }
+
+                    if (inCodeBlock) {
+                      codeContent.push(line);
+                      continue;
+                    }
+
+                    // Handle headings
+                    if (trimmedLine.startsWith('## ')) {
+                      flushList();
+                      elements.push(
+                        <h2 key={i} className="text-h2 mt-12 mb-6 text-brand-white">
+                          {trimmedLine.slice(3)}
+                        </h2>
+                      );
+                      continue;
+                    }
+
+                    if (trimmedLine.startsWith('### ')) {
+                      flushList();
+                      elements.push(
+                        <h3 key={i} className="text-2xl font-bold mt-8 mb-4 text-brand-white">
+                          {trimmedLine.slice(4)}
+                        </h3>
+                      );
+                      continue;
+                    }
+
+                    // Handle list items
+                    if (trimmedLine.startsWith('- ') || trimmedLine.match(/^\d+\./)) {
+                      if (!inList) {
+                        inList = true;
+                      }
+                      const itemContent = trimmedLine
+                        .replace(/^-\s*/, '')
+                        .replace(/^\d+\.\s*/, '')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/`(.*?)`/g, '<code class="bg-brand-dark px-1 rounded text-brand-orange">$1</code>');
+                      listItems.push(itemContent);
+                      continue;
+                    }
+
+                    // Handle regular paragraphs
+                    if (trimmedLine) {
+                      flushList();
+                      const formattedContent = trimmedLine
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/`(.*?)`/g, '<code class="bg-brand-dark px-2 py-1 rounded text-brand-orange">$1</code>');
+
+                      elements.push(
+                        <p key={i} className="mb-6" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+                      );
+                    }
                   }
 
-                  // Handle code blocks
-                  if (paragraph.startsWith("```")) {
-                    return null;
-                  }
+                  // Flush any remaining content
+                  flushList();
+                  flushCode();
 
-                  // Handle lists
-                  if (paragraph.match(/^\d+\./) || paragraph.startsWith("- ")) {
-                    return (
-                      <li key={index} className="ml-6 mb-2">
-                        {paragraph.replace(/^\d+\.\s*/, "").replace(/^-\s*/, "")}
-                      </li>
-                    );
-                  }
-
-                  // Handle emphasis
-                  const formattedParagraph = paragraph
-                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-                    .replace(/`(.*?)`/g, "<code class='bg-brand-dark px-2 py-1 rounded text-brand-orange'>$1</code>");
-
-                  return (
-                    <p
-                      key={index}
-                      className="mb-6"
-                      dangerouslySetInnerHTML={{ __html: formattedParagraph }}
-                    />
-                  );
-                })}
+                  return elements;
+                })()}
               </div>
             </div>
           </div>
