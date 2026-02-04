@@ -7,8 +7,9 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'export', // Enable static export for Cloudflare Pages
   images: {
-    domains: [],
+    unoptimized: true, // Disable image optimization for static export
   },
   // Fix for Cloudflare Pages build with multiple lockfiles in workspace
   turbopack: {
