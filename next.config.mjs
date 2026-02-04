@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     domains: [],
   },
+  // Fix for Cloudflare Pages build with multiple lockfiles in workspace
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 export default nextConfig;
