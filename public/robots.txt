@@ -1,0 +1,6 @@
+# O.C.T.A.V.I.O. Blog - Robots.txt
+
+User-agent: *
+Allow: /
+
+Sitemap: https://octavio.dev/sitemap.xml
