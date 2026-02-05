@@ -36,6 +36,22 @@
   .container-custom {
     @apply max-w-1440 mx-auto;
   }
+
+  .stat-card {
+    @apply bg-gradient-to-br from-brand-purple/10 to-brand-dark border border-brand-purple/30 rounded-2xl p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-brand-orange/50 hover:from-brand-orange/10;
+  }
+
+  .stat-icon {
+    @apply mb-4 flex justify-center items-center;
+  }
+
+  .stat-value {
+    @apply text-4xl md:text-5xl font-bold text-brand-orange mb-2;
+  }
+
+  .stat-label {
+    @apply text-sm md:text-base text-brand-white/70 uppercase tracking-wider;
+  }
 }
 
 @layer utilities {
