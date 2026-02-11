@@ -1126,18 +1126,6 @@ Stay fast, stay curious, and remember: in the race against latency, the cephalop
     readTime: "10 min read",
     slug: "groq-speech-to-text-automation",
   },
-];
-
-export function getBlogPosts() {
-  return blogPosts.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-}
-
-export function getBlogPostBySlug(slug: string) {
-  return blogPosts.find((post) => post.slug === slug);
-}
-
   {
     id: "5",
     title: "From Zero to CRM: Building a Complete Customer Relationship System in 7 Hours",
